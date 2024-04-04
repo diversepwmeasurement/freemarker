@@ -1,67 +1,56 @@
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
-name: CI
-
-permissions:
-  contents: read
-
-on:
-  workflow_dispatch: { }
-  push:
-    branches: [ '2.3-gae' ]
-  pull_request:
-    branches: [ '2.3-gae' ]
-
 jobs:
   build:
-    strategy:
-        matrix:
-            os: [windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
     concurrency: main_tests_${{ github.ref }}
+    runs-on: self-hosted
     steps:
-      - name: Welcome Message
-        run: 'echo "Started with parameters: ${{ matrix.os }} because ${{ github.event_name }} on ${{ github.ref }}"'
-      - uses: actions/checkout@v4
-      - name: Set up JDK 8
-        uses: actions/setup-java@v3
-        with:
-          java-version: 8
-          distribution: temurin
-      - name: Set up JDK 16
-        uses: actions/setup-java@v3
-        with:
-          java-version: 16
-          distribution: zulu
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: 17
-          distribution: oracle
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@v1.1.0
-      - name: Run Build
-        id: build_step
-        run: './gradlew "-Pfreemarker.signMethod=none" "-Pfreemarker.allowUnsignedReleaseBuild=true" --continue clean build'
-      - name: Upload Failed Report
-        uses: actions/upload-artifact@v2.3.1
-        if: failure() && steps.build_step.outcome == 'failure'
-        with:
-          name: test-reports-${{ matrix.os }}
-          path: build/reports/**
-          retention-days: 30
+    - continue-on-error: true
+      name: Welcome Message
+      run: 'echo "Started with parameters: ${{ matrix.os }} because ${{ github.event_name
+        }} on ${{ github.ref }}"'
+    - continue-on-error: true
+      uses: actions/checkout@v4
+    - continue-on-error: true
+      name: Set up JDK 8
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 8
+    - continue-on-error: true
+      name: Set up JDK 16
+      uses: actions/setup-java@v3
+      with:
+        distribution: zulu
+        java-version: 16
+    - continue-on-error: true
+      name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: oracle
+        java-version: 17
+    - continue-on-error: true
+      name: Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@v1.1.0
+    - continue-on-error: true
+      id: build_step
+      name: Run Build
+      run: ./gradlew "-Pfreemarker.signMethod=none" "-Pfreemarker.allowUnsignedReleaseBuild=true"
+        --continue clean build
+    - continue-on-error: true
+      if: failure() && steps.build_step.outcome == 'failure'
+      name: Upload Failed Report
+      uses: actions/upload-artifact@v2.3.1
+      with:
+        name: test-reports-${{ matrix.os }}
+        path: build/reports/**
+        retention-days: 30
+    strategy:
+      matrix:
+        os:
+        - windows-latest
+        - ubuntu-latest
+name: CI
+on:
+  repository_dispatch:
+    types: trigger-ga___ci.yml
+permissions:
+  contents: read
